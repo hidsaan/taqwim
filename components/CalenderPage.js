@@ -8,8 +8,11 @@ import {
   View,
   TouchableOpacity,
   ImageBackground,
+  Alert,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ramadanData from './data.json';
+import NotificationService from '../services/NotificationService';
 
 function CalenderPage() {
   const [currentDay, setCurrentDay] = useState(null);
@@ -28,6 +31,42 @@ function CalenderPage() {
     return ramadanData.findIndex(item => item.date === today);
   };
 
+  const handleNotificationSettings = () => {
+    Alert.alert(
+      'Notification Settings',
+      'Manage your Ramadan prayer time notifications',
+      [
+        {
+          text: 'Reschedule All',
+          onPress: () => {
+            NotificationService.scheduleRamadanNotifications(ramadanData);
+            Alert.alert('Success', 'All notifications have been rescheduled!');
+          },
+        },
+        {
+          text: 'Cancel All',
+          onPress: () => {
+            NotificationService.cancelAllNotifications();
+            Alert.alert('Cancelled', 'All notifications have been cancelled.');
+          },
+          style: 'destructive',
+        },
+        {
+          text: 'View Scheduled',
+          onPress: () => {
+            NotificationService.getScheduledNotifications((notifications) => {
+              Alert.alert(
+                'Scheduled Notifications',
+                `You have ${notifications.length} notifications scheduled.`
+              );
+            });
+          },
+        },
+        {text: 'Close', style: 'cancel'},
+      ]
+    );
+  };
+
   const todayIndex = getTodayIndex();
 
   return (
@@ -35,12 +74,17 @@ function CalenderPage() {
       source={require('../assets/bg.png')} 
       style={styles.backgroundImage}
       resizeMode="cover">
+      <StatusBar barStyle="dark-content" backgroundColor="#ffe6fa" translucent={false} />
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         
         <View style={styles.header}>
           <Text style={styles.headerTitle}>✨ Ramadan 2026 ✨</Text>
           <Text style={styles.headerSubtitle}>رمضان مبارك</Text>
+          {/* <TouchableOpacity 
+            style={styles.notificationButton}
+            onPress={handleNotificationSettings}>
+            <Icon name="bell-ring" size={24} color="#8B5A8E" />
+          </TouchableOpacity> */}
         </View>
 
       {selectedDay && (
@@ -55,11 +99,13 @@ function CalenderPage() {
             <View style={styles.timeBlock}>
               <Text style={styles.timeLabel}>🌙 Sehri</Text>
               <Text style={styles.timeValue}>{selectedDay.sehri}</Text>
+              <Text style={styles.notificationHint}>🔔 -15, -10, -5 min</Text>
             </View>
             <View style={styles.timeDivider} />
             <View style={styles.timeBlock}>
               <Text style={styles.timeLabel}>🌅 Iftar</Text>
               <Text style={styles.timeValue}>{selectedDay.iftar}</Text>
+              <Text style={styles.notificationHint}>🔔 -15, -10, -5 min</Text>
             </View>
           </View>
         </View>
@@ -75,9 +121,11 @@ function CalenderPage() {
           <TouchableOpacity 
             style={styles.viewToggle}
             onPress={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}>
-            <Text style={styles.viewToggleIcon}>
-              {viewMode === 'list' ? '📅' : '📋'}
-            </Text>
+            <Icon 
+              name={viewMode === 'list' ? 'calendar-month' : 'format-list-bulleted'} 
+              size={24} 
+              color="#8B5A8E" 
+            />
           </TouchableOpacity>
         </View>
         
@@ -232,6 +280,23 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     alignItems: 'center',
     backgroundColor: 'rgba(255, 245, 247, 0.85)',
+    position: 'relative',
+  },
+  notificationButton: {
+    position: 'absolute',
+    right: 20,
+    top: 20,
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#D8A7D8',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
   },
   headerTitle: {
     fontSize: 32,
@@ -306,6 +371,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#8B5A8E',
   },
+  notificationHint: {
+    fontSize: 11,
+    color: '#B388B3',
+    marginTop: 5,
+    fontStyle: 'italic',
+  },
   scrollView: {
     flex: 1,
   },
@@ -338,9 +409,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  viewToggleIcon: {
-    fontSize: 22,
-  },
+
   dayCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: 20,
