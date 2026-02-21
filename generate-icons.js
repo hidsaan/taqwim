@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 
-const sourceLogo = path.join(__dirname, 'assets', 'logo.png');
+const sourceLogo = path.join(__dirname, 'assets', 'logo_pastel.png');
 
 // Android icon sizes (mipmap folders)
 const androidSizes = [
@@ -27,7 +27,7 @@ const iosSizes = [
 ];
 
 async function generateIcons() {
-  console.log('🎨 Generating app icons from logo.png at 100% zoom...\n');
+  console.log('🎨 Generating app icons from logo_pastel.png at 100% zoom...\n');
 
   // Generate Android icons
   console.log('📱 Generating Android icons...');

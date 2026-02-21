@@ -1,0 +1,87 @@
+[
+  {
+    "ramadan": 2,
+    "title": "Towrah Bestowed",
+    "description": "On this day, the Towrah was bestowed upon Prophet Musa (AS), a divine scripture that carried guidance, law, and light for the Children of Israel.",
+    "type": "revelation"
+  },
+  {
+    "ramadan": 3,
+    "title": "Passing of Fatima (RA)",
+    "description": "On this day, Fatima (RA), the beloved daughter of Prophet Muhammad (PBUH), returned to her Lord — a woman remembered for her purity, strength, and unwavering devotion.",
+    "type": "death"
+  },
+  {
+    "ramadan": 10,
+    "title": "Passing of Khadija (RA)",
+    "description": "On this day, Khadija (RA), the first believer and steadfast supporter of the Prophet (PBUH), passed away — a pillar of strength during the earliest and most difficult days of Islam.",
+    "type": "death"
+  },
+  {
+    "ramadan": 12,
+    "title": "Bible Bestowed",
+    "description": "On this day, the Injeel (Bible) was bestowed upon Prophet Eesa (AS), bringing mercy, wisdom, and spiritual renewal to his people.",
+    "type": "revelation"
+  },
+  {
+    "ramadan": 15,
+    "title": "Birth of Hasan Ibn Ali (RA)",
+    "description": "On this day, Hasan Ibn Ali (RA), the beloved grandson of the Prophet (PBUH), was born — a figure known for his gentleness, wisdom, and dedication to unity among the believers.",
+    "type": "birth"
+  },
+  {
+    "ramadan": 17,
+    "title": "Battle of Badr",
+    "description": "On this day in 2 AH, the Battle of Badr took place — a defining moment in Islamic history where a small band of believers stood firm in faith and witnessed a decisive victory.",
+    "type": "battle",
+    "ah_year": 2
+  },
+  {
+    "ramadan": 17,
+    "title": "Passing of Aisha Bint Abu Bakr (RA)",
+    "description": "On this day in 58 AH, Aisha Bint Abu Bakr (RA), scholar, narrator of hadith, and beloved wife of the Prophet (PBUH), returned to her Lord, leaving behind immense knowledge and legacy.",
+    "type": "death",
+    "ah_year": 58
+  },
+  {
+    "ramadan": 18,
+    "title": "Zaboor Bestowed",
+    "description": "On this day, the Zaboor was bestowed upon Prophet Dawood (AS), a scripture known for its beautiful praises and supplications to Allah.",
+    "type": "revelation"
+  },
+  {
+    "ramadan": 19,
+    "title": "Attack on Caliph Ali (RA)",
+    "description": "On this day, Caliph Ali (RA) was struck by Abd al-Rahman ibn Muljam while in prayer — a night remembered as Shab-e-Zarbat, marked by sorrow and reflection.",
+    "type": "event"
+  },
+  {
+    "ramadan": 20,
+    "title": "Conquest of Mecca",
+    "description": "On this day, the Conquest of Mecca took place — a moment of mercy and forgiveness, when the Prophet (PBUH) entered the city not as a tyrant, but as a leader who chose reconciliation over revenge.",
+    "type": "historic"
+  },
+  {
+    "ramadan": 21,
+    "title": "Martyrdom of Caliph Ali (RA)",
+    "description": "On this day, Caliph Ali (RA) was martyred — a leader known for his courage, justice, and deep devotion, whose legacy continues to inspire generations.",
+    "type": "martyrdom"
+  },
+  {
+    "ramadan": null,
+    "title": "Possible Lailat-ul-Qadr",
+    "description": "The odd nights after the 20th of Ramadan — 21st, 23rd, 25th, 27th, and 29th — are sought as possible nights of Lailat-ul-Qadr, the Night of Power, when the Quran was first revealed.",
+    "type": "recurring",
+    "recurring": {
+      "after_ramadan": 20,
+      "odd_nights_only": true
+    }
+  },
+  {
+    "ramadan": 27,
+    "title": "Lailat-ul-Qadr (Most Likely)",
+    "description": "The 27th night of Ramadan is widely regarded as the most likely night of Lailat-ul-Qadr — a night better than a thousand months, filled with mercy, forgiveness, and divine decree.",
+    "type": "special",
+    "highlight": true
+  }
+]

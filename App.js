@@ -15,12 +15,7 @@ function App() {
     };
     
     setupNotifications();
-
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 3000);
-
-    return () => clearTimeout(timer);
+    // Splash screen will handle its own timing based on animations
   }, []);
 
   if (showSplash) {

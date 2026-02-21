@@ -9,22 +9,139 @@ import {
   TouchableOpacity,
   ImageBackground,
   Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import ramadanData from './data.json';
+import eventsData from './events.json';
 import NotificationService from '../services/NotificationService';
 
 function CalenderPage() {
   const [currentDay, setCurrentDay] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [noteDayNumber, setNoteDayNumber] = useState(null);
+  const [dayNotes, setDayNotes] = useState({});
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     const todayData = ramadanData.find(item => item.date === today);
     setCurrentDay(todayData);
     setSelectedDay(todayData); // Set selected day to today initially
+    loadNotes();
   }, []);
+
+  const loadNotes = async () => {
+    try {
+      const storedNotes = await AsyncStorage.getItem('ramadanNotes');
+      if (storedNotes) {
+        setDayNotes(JSON.parse(storedNotes));
+      }
+    } catch (error) {
+      console.error('Error loading notes:', error);
+    }
+  };
+
+  const saveNote = async () => {
+    if (!noteDayNumber) return;
+    
+    try {
+      const updatedNotes = {
+        ...dayNotes,
+        [noteDayNumber]: noteText.trim(),
+      };
+      
+      // Remove empty notes
+      if (!noteText.trim()) {
+        delete updatedNotes[noteDayNumber];
+      }
+      
+      await AsyncStorage.setItem('ramadanNotes', JSON.stringify(updatedNotes));
+      setDayNotes(updatedNotes);
+      setNoteModalVisible(false);
+      setNoteText('');
+      setNoteDayNumber(null);
+    } catch (error) {
+      console.error('Error saving note:', error);
+      Alert.alert('Error', 'Failed to save note. Please try again.');
+    }
+  };
+
+  const openNoteModal = (dayNumber) => {
+    setNoteDayNumber(dayNumber);
+    setNoteText(dayNotes[dayNumber] || '');
+    setNoteModalVisible(true);
+  };
+
+  const deleteNote = async () => {
+    if (!noteDayNumber) return;
+    
+    Alert.alert(
+      'Delete Note',
+      'Are you sure you want to delete this note?',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const updatedNotes = {...dayNotes};
+              delete updatedNotes[noteDayNumber];
+              await AsyncStorage.setItem('ramadanNotes', JSON.stringify(updatedNotes));
+              setDayNotes(updatedNotes);
+              setNoteModalVisible(false);
+              setNoteText('');
+              setNoteDayNumber(null);
+            } catch (error) {
+              console.error('Error deleting note:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const getEventsForDay = (ramadanDay) => {
+    const dayEvents = eventsData.filter(event => event.ramadan === ramadanDay);
+    
+    // Check for recurring Lailat-ul-Qadr events
+    const recurringEvent = eventsData.find(event => event.type === 'recurring' && event.recurring);
+    if (recurringEvent && ramadanDay > recurringEvent.recurring.after_ramadan) {
+      if (recurringEvent.recurring.odd_nights_only && ramadanDay % 2 !== 0) {
+        dayEvents.push(recurringEvent);
+      }
+    }
+    
+    return dayEvents;
+  };
+
+  const getEventIcon = (type) => {
+    switch(type) {
+      case 'revelation': return '📖';
+      case 'death': return '🕊️';
+      case 'birth': return '🌟';
+      case 'battle': return '⚔️';
+      case 'martyrdom': return '🌹';
+      case 'historic': return '🏛️';
+      case 'special': return '✨';
+      case 'recurring': return '🌙';
+      default: return '📅';
+    }
+  };
+
+  const handleEventPress = (event) => {
+    setSelectedEvent(event);
+    setModalVisible(true);
+  };
 
   const getTodayIndex = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -74,7 +191,7 @@ function CalenderPage() {
       source={require('../assets/bg.png')} 
       style={styles.backgroundImage}
       resizeMode="cover">
-      <StatusBar barStyle="dark-content" backgroundColor="#ffe6fa" translucent={false} />
+      <StatusBar barStyle="dark-content" backgroundColor="#fde9f0" translucent={false} />
       <SafeAreaView style={styles.container}>
         
         <View style={styles.header}>
@@ -94,20 +211,80 @@ function CalenderPage() {
               <Text style={styles.todayBadgeText}>TODAY</Text>
             </View>
           )}
+          <TouchableOpacity 
+            style={styles.addNoteButton}
+            onPress={() => openNoteModal(selectedDay.ramadan)}
+            activeOpacity={0.7}>
+            <Icon name="plus" size={20} color="#8B5A8E" />
+          </TouchableOpacity>
           <Text style={styles.todayRamadan}>Day {selectedDay.ramadan}</Text>
+          <Text style={styles.gregorianDate}>
+            {new Date(selectedDay.date).toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </Text>
           <View style={styles.todayTimes}>
             <View style={styles.timeBlock}>
               <Text style={styles.timeLabel}>🌙 Sehri</Text>
               <Text style={styles.timeValue}>{selectedDay.sehri}</Text>
-              <Text style={styles.notificationHint}>🔔 -15, -10, -5 min</Text>
+              {/* <Text style={styles.notificationHint}>🔔 -15, -10, -5 min</Text> */}
             </View>
             <View style={styles.timeDivider} />
             <View style={styles.timeBlock}>
               <Text style={styles.timeLabel}>🌅 Iftar</Text>
               <Text style={styles.timeValue}>{selectedDay.iftar}</Text>
-              <Text style={styles.notificationHint}>🔔 -15, -10, -5 min</Text>
+              {/* <Text style={styles.notificationHint}>🔔 -15, -10, -5 min</Text> */}
             </View>
           </View>
+          
+          {dayNotes[selectedDay.ramadan] && (
+            <View style={styles.noteSection}>
+              <View style={styles.noteDivider} />
+              <View style={styles.noteHeader}>
+                <Text style={styles.noteTitle}>📝 Your Note:</Text>
+              </View>
+              <Text style={styles.noteText}>{dayNotes[selectedDay.ramadan]}</Text>
+            </View>
+          )}
+          
+          {(() => {
+            const dayEvents = getEventsForDay(selectedDay.ramadan);
+            if (dayEvents.length === 0) return null;
+            
+            return (
+              <View style={styles.eventsSection}>
+                <View style={styles.eventsDivider} />
+                <Text style={styles.eventsTitle}>About today:</Text>
+                {dayEvents.map((event, index) => (
+                  <View 
+                    key={index} 
+                    style={[
+                      styles.eventCard,
+                      event.highlight && styles.eventCardHighlight
+                    ]}>
+                    <View style={styles.eventRow}>
+                      <Text style={styles.eventIcon}>{getEventIcon(event.type)}</Text>
+                      <Text style={[
+                        styles.eventTitle,
+                        event.highlight && styles.eventTitleHighlight
+                      ]}>
+                        {event.title}
+                      </Text>
+                      <TouchableOpacity 
+                        style={styles.knowMoreButton}
+                        onPress={() => handleEventPress(event)}
+                        activeOpacity={0.7}>
+                        <Text style={styles.knowMoreText}>Know More</Text>
+                        <Icon name="chevron-right" size={16} color="#8B5A8E" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
         </View>
       )}
 
@@ -153,6 +330,11 @@ function CalenderPage() {
                     <Text style={[styles.dayNumber, isPast && styles.textPast]}>
                       {item.ramadan}
                     </Text>
+                    {dayNotes[item.ramadan] && (
+                      <View style={styles.noteIndicator}>
+                        <Icon name="note-text" size={12} color="#8B5A8E" />
+                      </View>
+                    )}
                   </View>
                   <View style={styles.dateInfo}>
                     <Text style={[styles.dayName, isPast && styles.textPast]}>
@@ -165,6 +347,15 @@ function CalenderPage() {
                       })}
                     </Text>
                   </View>
+                  <TouchableOpacity 
+                    style={styles.dayAddNoteButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      openNoteModal(item.ramadan);
+                    }}
+                    activeOpacity={0.7}>
+                    <Icon name="plus-circle-outline" size={24} color="#8B5A8E" />
+                  </TouchableOpacity>
                 </View>
                 
                 <View style={styles.timesContainer}>
@@ -260,6 +451,97 @@ function CalenderPage() {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setModalVisible(false)}
+              activeOpacity={0.7}>
+              <Icon name="close" size={24} color="#8B5A8E" />
+            </TouchableOpacity>
+            
+            {selectedEvent && (
+              <>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalIcon}>{getEventIcon(selectedEvent.type)}</Text>
+                  <Text style={styles.modalTitle}>{selectedEvent.title}</Text>
+                </View>
+                
+                <View style={styles.modalBody}>
+                  <Text style={styles.modalDescription}>{selectedEvent.description}</Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={noteModalVisible}
+        onRequestClose={() => setNoteModalVisible(false)}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}>
+          <View style={styles.noteModalContent}>
+            <View style={styles.noteModalHeader}>
+              <Text style={styles.noteModalTitle}>
+                Add Your Personal Note for Day {noteDayNumber}
+              </Text>
+              <TouchableOpacity 
+                style={styles.modalCloseButton}
+                onPress={() => {
+                  setNoteModalVisible(false);
+                  setNoteText('');
+                  setNoteDayNumber(null);
+                }}
+                activeOpacity={0.7}>
+                <Icon name="close" size={24} color="#8B5A8E" />
+              </TouchableOpacity>
+            </View>
+            
+            <TextInput
+              style={styles.noteInput}
+              multiline
+              placeholder="Write your thoughts, reflections, or reminders for this day..."
+              placeholderTextColor="#B388B3"
+              value={noteText}
+              onChangeText={setNoteText}
+              textAlignVertical="top"
+            />
+            
+            <Text style={styles.noteDisclaimer}>
+              * Notes are device-specific until login functionality is created
+            </Text>
+            
+            <View style={styles.noteModalActions}>
+              {dayNotes[noteDayNumber] && (
+                <TouchableOpacity 
+                  style={styles.deleteNoteButton}
+                  onPress={deleteNote}
+                  activeOpacity={0.7}>
+                  <Icon name="delete-outline" size={20} color="#FF6B6B" />
+                  <Text style={styles.deleteNoteText}>Delete</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity 
+                style={styles.saveNoteButton}
+                onPress={saveNote}
+                activeOpacity={0.7}>
+                <Icon name="content-save" size={20} color="#FFFFFF" />
+                <Text style={styles.saveNoteText}>Save Note</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
     </ImageBackground>
   );
@@ -344,7 +626,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#8B5A8E',
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  gregorianDate: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#B388B3',
+    textAlign: 'center',
     marginBottom: 20,
+    opacity: 0.7,
   },
   todayTimes: {
     flexDirection: 'row',
@@ -628,6 +918,258 @@ const styles = StyleSheet.create({
     color: '#8B5A8E',
     fontWeight: '600',
     marginBottom: 3,
+  },
+  eventsSection: {
+    marginTop: 20,
+  },
+  eventsDivider: {
+    height: 1,
+    backgroundColor: '#F3E5F5',
+    marginBottom: 15,
+  },
+  eventsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#8B5A8E',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  eventCard: {
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  eventCardHighlight: {
+    backgroundColor: 'rgba(255, 215, 0, 0.08)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+  },
+  eventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  eventIcon: {
+    fontSize: 22,
+    marginRight: 10,
+  },
+  eventTitle: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#8B5A8E',
+    flex: 1,
+  },
+  eventTitleHighlight: {
+    color: '#D4AF37',
+    fontWeight: '500',
+  },
+  eventDescription: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    paddingLeft: 34,
+  },
+  knowMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 8,
+  },
+  knowMoreText: {
+    fontSize: 13,
+    color: '#8B5A8E',
+    fontWeight: '600',
+    marginRight: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 25,
+    padding: 25,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 10},
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3E5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingRight: 40,
+  },
+  modalIcon: {
+    fontSize: 48,
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#8B5A8E',
+    textAlign: 'center',
+  },
+  modalBody: {
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#F3E5F5',
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  addNoteButton: {
+    position: 'absolute',
+    top: 25,
+    right: 15,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3E5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  dayAddNoteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3E5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  noteIndicator: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FFE5EC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  noteSection: {
+    marginTop: 20,
+  },
+  noteDivider: {
+    height: 1,
+    backgroundColor: '#F3E5F5',
+    marginBottom: 15,
+  },
+  noteHeader: {
+    marginBottom: 10,
+  },
+  noteTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#8B5A8E',
+  },
+  noteText: {
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 22,
+    fontStyle: 'italic',
+  },
+  noteModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 25,
+    width: '100%',
+    maxHeight: '80%',
+    marginTop: 'auto',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: -5},
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  noteModalHeader: {
+    marginBottom: 20,
+    paddingRight: 40,
+  },
+  noteModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#8B5A8E',
+    textAlign: 'center',
+    lineHeight: 28,
+  },
+  noteInput: {
+    backgroundColor: '#F9F9F9',
+    borderRadius: 15,
+    padding: 15,
+    fontSize: 16,
+    color: '#333',
+    minHeight: 200,
+    borderWidth: 1,
+    borderColor: '#F3E5F5',
+    marginBottom: 10,
+  },
+  noteDisclaimer: {
+    fontSize: 12,
+    color: '#B0B0B0',
+    fontStyle: 'italic',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  noteModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  saveNoteButton: {
+    flexDirection: 'row',
+    backgroundColor: '#8B5A8E',
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    marginLeft: 10,
+  },
+  saveNoteText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  deleteNoteButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FFE5E5',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteNoteText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
   },
 });
 

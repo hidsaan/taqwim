@@ -1,7 +1,8 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {
   View,
   Image,
+  Text,
   StyleSheet,
   Animated,
   Dimensions,
@@ -10,35 +11,34 @@ import {
 const {width, height} = Dimensions.get('window');
 
 function SplashScreen({onFinish}) {
-  const fadeAnim = new Animated.Value(0);
-  const scaleAnim = new Animated.Value(0.3);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(-50)).current;
 
   useEffect(() => {
+    // Start fade-in animation from left to right
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 1000,
+        duration: 1500,
         useNativeDriver: true,
       }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 10,
-        friction: 3,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    const timer = setTimeout(() => {
-      Animated.timing(fadeAnim, {
+      Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 500,
+        duration: 1500,
         useNativeDriver: true,
-      }).start(() => {
-        if (onFinish) onFinish();
-      });
-    }, 2500);
-
-    return () => clearTimeout(timer);
+      }),
+    ]).start(() => {
+      // Wait a bit after animation completes, then fade out
+      setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => {
+          if (onFinish) onFinish();
+        });
+      }, 1000);
+    });
   }, []);
 
   return (
@@ -46,20 +46,21 @@ function SplashScreen({onFinish}) {
       <View style={styles.circle1} />
       <View style={styles.circle2} />
       <View style={styles.circle3} />
-      
+
       <Animated.View
         style={[
           styles.logoContainer,
           {
             opacity: fadeAnim,
-            transform: [{scale: scaleAnim}],
+            transform: [{translateX: slideAnim}],
           },
         ]}>
         <Image
-          source={require('../assets/logo.png')}
+          source={require('../assets/logo_pastel.png')}
           style={styles.logo}
           resizeMode="contain"
         />
+        <Text style={styles.appName}>Taqwim</Text>
       </Animated.View>
     </View>
   );
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#8B5A8E',
+    backgroundColor: '#efbdce',
   },
   circle1: {
     position: 'absolute',
@@ -102,18 +103,20 @@ const styles = StyleSheet.create({
   logoContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'transparent',
     borderRadius: 40,
     padding: 40,
-    shadowColor: '#FFE5EC',
-    shadowOffset: {width: 0, height: 10},
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
   },
   logo: {
     width: 180,
     height: 180,
+  },
+  appName: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#8B5A8E',
+    marginTop: 20,
+    letterSpacing: 2,
   },
 });
 
