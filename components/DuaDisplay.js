@@ -8,12 +8,14 @@ import {
   StatusBar,
   Animated,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {SEHRI_DUA, IFTAR_DUA} from '../constants/duas';
 
 const {width} = Dimensions.get('window');
 
-function DuaDisplay({route}) {
+function DuaDisplay({route, navigation}) {
   const {duaType, minutesLeft, ramadanDay} = route?.params || {};
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.9));
@@ -65,6 +67,15 @@ function DuaDisplay({route}) {
       resizeMode="cover">
       <StatusBar barStyle="dark-content" backgroundColor="#ffe6fa" translucent={false} />
       <SafeAreaView style={styles.container}>
+        {/* Back Button */}
+        {navigation && (
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}>
+            <Icon name="arrow-left" size={28} color="#8B5A8E" />
+          </TouchableOpacity>
+        )}
+
         <Animated.View
           style={[
             styles.content,
@@ -144,6 +155,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#D8A7D8',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   content: {
     flex: 1,

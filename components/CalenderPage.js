@@ -32,11 +32,40 @@ function CalenderPage() {
   const [dayNotes, setDayNotes] = useState({});
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayData = ramadanData.find(item => item.date === today);
-    setCurrentDay(todayData);
-    setSelectedDay(todayData); // Set selected day to today initially
+    // Function to get current Ramadan day
+    const getCurrentRamadanDay = () => {
+      const today = new Date().toISOString().split('T')[0];
+      const todayData = ramadanData.find(item => item.date === today);
+      setCurrentDay(todayData);
+      if (!selectedDay) {
+        setSelectedDay(todayData); // Set selected day to today initially
+      }
+    };
+
+    // Initial load
+    getCurrentRamadanDay();
     loadNotes();
+
+    // Set up interval to check for day change at midnight
+    const checkForDayChange = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const timeUntilMidnight = tomorrow.getTime() - now.getTime();
+      
+      return setTimeout(() => {
+        getCurrentRamadanDay();
+        // Set up next check
+        const intervalId = setInterval(getCurrentRamadanDay, 24 * 60 * 60 * 1000); // Check every 24 hours
+        return () => clearInterval(intervalId);
+      }, timeUntilMidnight);
+    };
+
+    const timeoutId = checkForDayChange();
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const loadNotes = async () => {
